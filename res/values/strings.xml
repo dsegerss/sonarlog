@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">SonarLogger</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="logger_service_name">LoggerService</string>
+    <string name="manage_projects">Manage projects</string>
+    <string name="load_project">Load</string>
+    <string name="delete_project">Delete</string>
+    <string name="new_project">New project</string>
+    <string name="default_project">default</string>
+    <string name="start_service">Start/Stop services</string>
+    <string name="project_name_hint">Project name</string>
+    <string name="toggle_sonar_hint">Toggle logging</string>
+    <string name="sonar_off">Off</string>
+    <string name="sonar_on">On</string>
+    <string name="toggle_sonar_on">Start logging</string>
+    <string name="mode_append_logs">Append log</string>
+    <string name="X_Y_Accuracy">GPS Accuracy</string>
+    <string name="default_gps_accuracy">10</string>
+    <string name="statistics_header">Logging statistics</string>
+	<string name="acc_threshold_label">Min accuracy</string>
+	<string name="acc_threshold">10</string>
+	<string name="tot_pos_label">Total pos:</string>
+	<string name="valid_pos_label">Valid positions:</string>
+	<string name="total_depths_label">Total depths:</string>
+	<string name="logged_depths_label">Logged depths:</string>
+	<string name="init_tot_pos">0</string>
+	<string name="init_valid_pos">0</string>
+	<string name="init_total_depths">0</string>
+	<string name="init_logged_depths">0</string>
+	<string name="init_gps_accuracy">999</string>
+	<string name="init_distance">999</string>
+	<string name="gps_accuracy_label">GPS accuracy</string>
+	<string name="distance_label">Distance</string>
+    
+
+</resources>
