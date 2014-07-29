@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
@@ -43,7 +44,7 @@ public class SonarReader extends IOIOService {
 	public Project prj;
 	private NotificationManager mNM;
 	private NMEAParser parser;
-	public static List<GpsReading> positions;
+	public static CopyOnWriteArrayList<GpsReading> positions;
 	public static Queue<SonarReading> depths;
 
 	private LocationManager lm;
@@ -85,6 +86,7 @@ public class SonarReader extends IOIOService {
 			public void loop() throws ConnectionLostException,
 			InterruptedException {
 				this.nloops += 1;
+				
 				Log.d(TAG, String.format("Loop no %d", this.nloops) );
 				try {
 					parser.handleCharacters();
@@ -92,7 +94,9 @@ public class SonarReader extends IOIOService {
 				} catch (IOException e) {
 					Log.e(TAG, e.getMessage());
 				}
-				Log.d(TAG,  String.format("No depths: %d, No positions: %d", depths.size(), positions.size()));
+				synchronized(depths) {
+					Log.d(TAG,  String.format("No depths: %d, No positions: %d", depths.size(), positions.size()));
+				}
 				while (interpolate_pos()) {
 					led_.write(true);
 				}
@@ -110,7 +114,7 @@ public class SonarReader extends IOIOService {
 		MIN_ACCURACY_METERS = this.prj.getParameterAsDouble("gps.accuracy");
 		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		depths = new LinkedList<SonarReading>();
-		positions = new ArrayList<GpsReading>();
+		positions = new CopyOnWriteArrayList<GpsReading>();
 		showNotification();
 		startGpsListener();
 		super.onCreate();		
@@ -164,6 +168,9 @@ public class SonarReader extends IOIOService {
 		
 		mNM.notify(0, n);	
 	}
+	public  void disconnected() {
+		Log.d(TAG, "IOIO disconnected!");
+	}
 	
 	@Override
 	public void onDestroy() {
@@ -180,12 +187,14 @@ public class SonarReader extends IOIOService {
 	public boolean interpolate_pos() {
 		this.sendUpdateUIBroadcast();
 		int posInd = 1;
-		SonarReading reading = depths.peek();
-		while (reading != null && positions.size() > 0 && reading.timestamp < positions.get(0).timestamp) {
-			depths.remove();
+		SonarReading reading;
+		synchronized(depths) {
 			reading = depths.peek();
+			while (reading != null && positions.size() > 0 && reading.timestamp < positions.get(0).timestamp) {
+				depths.remove();
+				reading = depths.peek();
+			}
 		}
-
 
 		// depth queue empty
 		if (reading == null)
@@ -206,14 +215,16 @@ public class SonarReader extends IOIOService {
 		
 		GpsReading p1 = positions.get(posInd - 1);
 		GpsReading p2 = positions.get(posInd);
-		
+	
 
 		if (reading.timestamp > p2.timestamp | reading.timestamp < p1.timestamp)
 			return false;
 
 		if (distance(p1, p2) > MAX_INTERPOLATION_DIST) {
 			Log.d(TAG, "Too large distance between positions");
-			depths.remove();
+			synchronized(depths) {
+				depths.remove();
+			}
 			this.remove_old_positions(posInd -1);
 			return true;
 		}
@@ -234,7 +245,9 @@ public class SonarReader extends IOIOService {
 
 		this.remove_old_positions(posInd -1);
 		this.prj.log_depth(reading);
-		depths.remove();
+		synchronized(depths) {
+			depths.remove();
+		}
 		SonarLoggerActivity.logged_depths += 1;
 
 		return true;
@@ -257,7 +270,7 @@ public class SonarReader extends IOIOService {
 	}
 	
 	 public void remove_old_positions(int lastOldIndex) {
-		 positions = positions.subList(lastOldIndex, positions.size());
+		 positions = new CopyOnWriteArrayList<GpsReading>(positions.subList(lastOldIndex, positions.size()));
 	 }
 	
 	private class MyLocationListener implements LocationListener {

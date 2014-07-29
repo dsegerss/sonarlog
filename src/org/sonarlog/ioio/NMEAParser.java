@@ -54,13 +54,15 @@ public class NMEAParser {
 				String key = words[0].substring(3);
 				if (key.equals("DPT")) {
 					SonarLoggerActivity.tot_depths += 1;
-					SonarReader.depths.add(
-							new SonarReading(
-									Double.valueOf(words[1]),
-									System.currentTimeMillis())
-							);
-					return true;
+					synchronized(SonarReader.depths) {
+						SonarReader.depths.add(
+								new SonarReading(
+										Double.valueOf(words[1]),
+										System.currentTimeMillis())
+								);
 					}
+					return true;
+				}
 				else
 					return false;
 			} 

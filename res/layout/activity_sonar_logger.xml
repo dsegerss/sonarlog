@@ -62,8 +62,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:hint="@string/project_name_hint"
-                android:text="@string/default_project" />
+                android:hint="@string/project_name_hint" />
 
         <TableRow
             android:id="@+id/tableRow3"

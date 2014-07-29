@@ -33,8 +33,6 @@ public class SonarLoggerActivity extends Activity {
 	 private Project prj = null;
 	 private static final String TAG = "SonarLoggerActivity";
 	 static final int DELETE_PROJECT_ID = 1;
-	 
-	 
 	 public static int tot_pos;
 	 public static int tot_depths;
 	 public static int valid_pos;
@@ -135,6 +133,9 @@ public class SonarLoggerActivity extends Activity {
 		//adapter.setDropDownViewResource
        // 	(android.R.layout.simple_spinner_dropdown_item); 
 		projectSpinner.setAdapter(adapter);
+		projectSpinner
+			.setSelection(adapter.getPosition(SonarReader.projectName));
+
 		
 	}
 	
@@ -174,9 +175,12 @@ public class SonarLoggerActivity extends Activity {
 				}
 			}
 		};
+		
+		Spinner projectSpinner = (Spinner) findViewById(R.id.projectSpinner);
+		String projectName = (String) projectSpinner
+				.getSelectedItem();
 
-		String msg = String.format("Delete project %s?",
-				this.prj.getProjectName());
+		String msg = String.format("Delete project %s?", projectName);
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(msg).setPositiveButton("Yes", dialogClickListener)
 				.setNegativeButton("No", dialogClickListener).show();
@@ -184,13 +188,16 @@ public class SonarLoggerActivity extends Activity {
 	}
 
 	private void loadProject() {
+		
 		// Load configuration from project selected in spinner
 		Spinner projectSpinner = (Spinner) findViewById(R.id.projectSpinner);
 		String name = (String) projectSpinner.getSelectedItem();
 		if (name == null)
-			SonarReader.projectName = "default";
-		else
+			SonarReader.projectName = this.prj.get_current();
+		else {
 			SonarReader.projectName = name;
+			this.prj.set_current();
+		}
 		this.prj = new Project(SonarReader.projectName);
 		this.prj.read();
 		this.setUIConfig();
@@ -205,10 +212,11 @@ public class SonarLoggerActivity extends Activity {
 			getLock(this).acquire();
 			startService(intent);
 		} else {
-			stopService(intent);
 			if (lockStatic.isHeld()) {
 				lockStatic.release();
 			}
+			stopService(intent);
+			
 
 		}
 		}
@@ -217,22 +225,23 @@ public class SonarLoggerActivity extends Activity {
 		// Create new project dir with a copy of .settings.txt
 		Editable projectNameEdit = ((EditText) findViewById(R.id.newProjectEditText))
 				.getEditableText();
-		SonarReader.projectName = projectNameEdit.toString();
-			
+		SonarReader.projectName = projectNameEdit.toString();			
 		this.updateSpinner();
-		Spinner projectSpinner = (Spinner) findViewById(R.id.projectSpinner);
-		@SuppressWarnings("unchecked")
-		ArrayAdapter<String> adapter = (ArrayAdapter<String>) projectSpinner
-				.getAdapter();
-		projectSpinner
-				.setSelection(adapter.getPosition(projectNameEdit.toString()));
 		projectNameEdit.clear();
 		this.loadProject();
 		}
 
 	public void loadProjectButtonClickHandler(View view) {
 		// Click handler for load project button
-		this.loadProject();
+		CompoundButton toggleButton = (CompoundButton) findViewById(R.id.sonarToggleButton);
+		if(toggleButton.isChecked()) {
+			Toast.makeText(getBaseContext(),
+					"Cannot load project while service is running",
+					Toast.LENGTH_LONG).show();
+		} else
+			this.loadProject();
+			this.resumeStats();
+			this.updateStats();
 	}
 	
 	public void checkBoxClickHandler(View view) {

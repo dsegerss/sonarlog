@@ -24,6 +24,7 @@ import android.util.Log;
 public class Project {
 	private static final String SETTINGS_FILE_NAME = "settings.rf";
 	private static final String SETTINGS_TEMPLATE_FILE_NAME = ".settings.rf";
+	private static final String CURRENT_PROJECT_FILE_NAME = ".current_project.rf";
 	private static final String DEPTHLOG_FILE_NAME = "depth.csv";
 	private static final String ROOT_DIR_NAME = "sonarlogger";
 	
@@ -35,6 +36,7 @@ public class Project {
 	private File rootDir = null;
 	private String projectName = null;
 	private File template = null;
+	private File current_project = null;
 	private File depthlog_file = null;
 	private long last_read = 0;
 	private BufferedWriter depthlog;
@@ -49,15 +51,19 @@ public class Project {
 			System.exit(1);
 		}
 		this.rootDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), ROOT_DIR_NAME);
-		this.projectName = projName;		
+		this.projectName = projName;
 		this.rf = new File(this.getProjectDir(), SETTINGS_FILE_NAME);
 		this.template = new File(this.rootDir, SETTINGS_TEMPLATE_FILE_NAME);
+		this.current_project = new File(this.rootDir, CURRENT_PROJECT_FILE_NAME);
 
 		if (!this.rootDir.exists())
 			this.rootDir.mkdir();
 		
 		if (!this.template.exists())
 			this.write_template();
+
+		if (!this.current_project.exists())
+			this.write_current_project("default");
 		
 		File projectDir = this.getProjectDir();
 		if (!projectDir.exists())
@@ -102,6 +108,77 @@ public class Project {
 	public boolean settings_updated() {
 		return (this.rf.lastModified() > this.last_read);
 	}
+	
+	public void set_current() {
+		if(this.current_project.exists())
+			this.current_project.delete();
+		this.write_current_project(this.projectName);
+	}
+	
+	public String get_current() {
+		BufferedReader reader = null;		
+		Log.d(TAG,"Reading resources");
+		try {
+			reader = new BufferedReader(new FileReader(current_project));
+			String name = reader.readLine();
+			return name;
+		}
+		catch (FileNotFoundException e) {
+			Log.e(TAG, "Error: " + e.getMessage());
+			System.exit(1);
+		}
+		catch (IOException e) {
+			Log.e(TAG, "Error: " + e.getMessage());
+			System.exit(1);
+		} 
+		finally {
+			try {
+				if (reader != null) {
+					reader.close();
+				}
+			} catch (IOException e) {
+				Log.e(TAG, "Error: " + e.getMessage());
+				System.exit(1);
+			}
+		}
+		return "default";
+
+	}
+	
+	public void write_current_project(String name) {
+		BufferedWriter writer = null;
+		Log.d(TAG,"Creating current project file");
+		
+		try {
+			if(!current_project.createNewFile())
+				Log.e(TAG, "Could not create .current_project.rf");
+		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
+		}
+		try {
+			if(!template.canWrite())
+				Log.e(TAG, "Cannot write to .current_project.rf");
+			
+			writer = new BufferedWriter(new FileWriter(current_project));
+			writer.write(name);
+		} catch (FileNotFoundException e) {
+			Log.e(TAG, "Error: " + e.getMessage());
+			System.exit(1);
+		} catch (IOException e) {
+			Log.e(TAG, "Error: " + e.getMessage());
+			System.exit(1);
+		} finally {
+			try {
+				if (writer != null) {
+					writer.close();
+				}
+			} catch (IOException e) {
+				Log.e(TAG, "Error: " + e.getMessage());
+				System.exit(1);
+			}
+		}
+	}
+	
 	
 	public void write_template() {
 		BufferedWriter writer = null;
@@ -384,10 +461,12 @@ public class Project {
 		else {
 			File selectedProject = new File(
 					this.getRootDir(),
-						projectName);
+						projName);
 			String[] children = selectedProject.list();
-			for (int i = 0; i < children.length; i++) {
-				new File(selectedProject, children[i]).delete();
+			if(children != null) {
+				for (int i = 0; i < children.length; i++) {
+					new File(selectedProject, children[i]).delete();
+				}
 			}
 			selectedProject.delete();
 		}
