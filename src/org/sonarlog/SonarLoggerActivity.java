@@ -216,10 +216,8 @@ public class SonarLoggerActivity extends Activity {
 				lockStatic.release();
 			}
 			stopService(intent);
-			
-
 		}
-		}
+	}
 
 	public void newProjectButtonClickHandler(View view) {
 		// Create new project dir with a copy of .settings.txt
